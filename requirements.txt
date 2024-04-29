@@ -1,0 +1,16 @@
+accelerate==0.21.0 
+# peft==0.4.0 
+# transformers==4.36.2 
+transformers
+# bitsandbytes==0.40.2 
+datasets 
+peft==0.6.0
+trl
+scipy==1.10.1
+flask
+torch==2.3.0
+flask
+transformers
+torch
+langchain
+langchain_community
