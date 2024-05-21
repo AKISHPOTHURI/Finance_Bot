@@ -161,7 +161,7 @@ cython_debug/
 
 
 #ENV
-finance/
+flask/
 
 #Model
 gpt2-QA-finetuned/

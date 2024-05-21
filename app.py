@@ -8,6 +8,7 @@ from langchain.llms.huggingface_pipeline import HuggingFacePipeline
 
 from transformers import pipeline
 model_id = "Akish/GPT2-QA-Finetuned"
+# model_id = "gpt2"
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(
@@ -16,7 +17,7 @@ model = AutoModelForCausalLM.from_pretrained(
 pipe = pipeline("text-generation", 
                model=model, 
                tokenizer=tokenizer, 
-               max_new_tokens=512
+               max_new_tokens=300
                )
 
 app = Flask(__name__)
@@ -32,28 +33,33 @@ def chat():
     try:
         msg = request.form["msg"]
         input = msg
-        hf = HuggingFacePipeline(pipeline=pipe)
-        prompt = f"""
-        ### System:
-        You are an AI assistant that follows instruction extremely well. 
-        Help as much as you can. Please be truthful and give direct answers in 100 words
+        if "hi" == input.lower():
+            return "Hello, I am AI Assistant For your Personal finance related queries. Ask me questions related to finance."
+        elif "hello" == input.lower():
+            return "Hi, I am AI Assistant For your Personal finance related queries. Ask me questions related to finance."
+        else:   
+            hf = HuggingFacePipeline(pipeline=pipe)
+            prompt = f"""
+            ### System:
+            You are an AI assistant that follows instructions extremely well. Your are responsible for answering questions related to finance. Give answers only related to finance.
+            If the questions are not related finance try to answer in financial terms only.Help as much as you can. Please be truthful,polite and give direct answers in 100 words. 
 
-        ### User:
-        {input}
+            ### User:
+            {input}
 
-        ### Response:
-        """
-        # return get_Chat_response(input)
-        # return "Akish"
-        response = hf.predict(prompt)
-# print(response)
-        match = re.search(r"### Response:\n(.*?)(?=###|$)", response, flags=re.DOTALL)
+            ### Response:
+            """
+            # return get_Chat_response(input)
+            # return "Akish"
+            response = hf.predict(prompt)
+    # print(response)
+            match = re.search(r"### Response:\n(.*?)(?=###|$)", response, flags=re.DOTALL)
 
-        if match:
-            response = match.group(1).strip()  # Remove leading/trailing whitespace
-            return response
-        else:
-            return "No 'Response' section found."
+            if match:
+                response = match.group(1).strip()  # Remove leading/trailing whitespace
+                return response
+            else:
+                return "No 'Response' section found."
 
     except Exception as e:
         print(e)
