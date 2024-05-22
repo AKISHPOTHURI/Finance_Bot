@@ -5,8 +5,13 @@ from flask import Flask, render_template, request, jsonify
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from langchain.llms.huggingface_pipeline import HuggingFacePipeline
+# from utils import examples,METADATA
 
 from transformers import pipeline
+import comet_llm
+import time
+
+
 model_id = "Akish/GPT2-QA-Finetuned"
 # model_id = "gpt2"
 
@@ -19,6 +24,35 @@ pipe = pipeline("text-generation",
                tokenizer=tokenizer, 
                max_new_tokens=300
                )
+
+examples = [
+    {
+        "question": "Where should I be investing my money?",
+        "answer": """
+Pay off your debt. As you witnessed, no investment % is guaranteed. 
+But your debt payments are... so if you have cash, the best way to "invest" it is to pay off your debt. 
+Since your car is depreciating while your house may be appreciating (don't know but it's possible) you should pay off your car loan first.
+You're losing money in more than one way on that investment.
+"""
+    },
+    {
+        "question": "Investment strategy for retired couple",
+        "answer": """
+You need to have them consult with a financial adviser that has a focus on issues for seniors. 
+This is because they are beyond the saving for retirement phase and are now in the making-their-money-last phase. 
+They also have issues related to health insurance, IRA RMDs, long term care insurance. 
+The adviser will need to review what they have and determine how to make sure it is what they need. 
+It is great idea for you to go along with them so you can understand what needs to be done. 
+You will want an adviser that charges you a fee for making the plan, not one that makes a commission based on what products you buy or invest in.
+"""
+    },
+]
+
+METADATA = {
+    "model": model_id,
+    "max_new_tokens": 1024,
+    "skip_special_tokens": True,
+}
 
 app = Flask(__name__)
 
@@ -41,8 +75,13 @@ def chat():
             hf = HuggingFacePipeline(pipeline=pipe)
             prompt = f"""
             ### System:
-            You are an AI assistant that follows instructions extremely well. Your are responsible for answering questions related to finance. Give answers only related to finance.
-            If the questions are not related finance try to answer in financial terms only.Help as much as you can. Please be truthful,polite and give direct answers in 100 words. 
+            You're a highly obedient AI assistant tasked with addressing finance-related queries exclusively. 
+            In the absence of financial inquiries, respond with financial terminology. 
+            Offer maximum assistance within ethical boundaries, ensuring honesty, courtesy, and brevity, limiting responses to 100 words.
+
+            below are some examples related to finance related question and answers. Please answer user questions accordingly
+            ### Examples
+            {examples}
 
             ### User:
             {input}
@@ -51,12 +90,21 @@ def chat():
             """
             # return get_Chat_response(input)
             # return "Akish"
+            start = time.time()
             response = hf.predict(prompt)
     # print(response)
             match = re.search(r"### Response:\n(.*?)(?=###|$)", response, flags=re.DOTALL)
 
             if match:
                 response = match.group(1).strip()  # Remove leading/trailing whitespace
+                duration = time.time() - start
+                comet_llm.init(project="finetuned-model")
+                comet_llm.log_prompt(
+                    prompt=input,
+                    output=response,
+                    duration=duration * 1000,
+                    metadata=METADATA,
+                )
                 return response
             else:
                 return "No 'Response' section found."

@@ -14,3 +14,4 @@ transformers
 torch
 langchain
 langchain_community
+comet_llm
